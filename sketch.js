@@ -309,5 +309,9 @@ function draw() {
 }
 
 function keyPressed() {
-  newPoster();
+  // Press "s" to save the current poster as a PNG.
+  // Date.now() keeps each save unique since draw() regenerates continuously.
+  if (key === "s" || key === "S") {
+    saveCanvas("semi-florals-" + Date.now(), "png");
+  }
 }
