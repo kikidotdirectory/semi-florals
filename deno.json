@@ -1,0 +1,10 @@
+{
+	"tasks": {
+		"watch": "deno bundle --minify -o dist/sketch.js src/sketch.ts --watch",
+		"serve": "deno run --allow-net --allow-read --allow-env --allow-sys jsr:@kastrophony/live-server dist/",
+		"dev": "deno task watch & deno task serve"
+	},
+	"imports": {
+		"p5": "npm:p5@1.1.0"
+	}
+}
