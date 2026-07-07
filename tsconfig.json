@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": false,
+    "moduleResolution": "node",
+    "outDir": "dist"
+  },
+  "include": ["*.ts", "**/*.ts"]
+}

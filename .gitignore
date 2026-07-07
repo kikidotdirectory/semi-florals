@@ -1,1 +1,4 @@
-node_modules/
+**/.DS_Store
+
+# Ignore generated sketch file
+dist/sketch.js
