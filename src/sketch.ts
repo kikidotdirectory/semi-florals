@@ -271,14 +271,6 @@ const sketch = (p: p5) => {
 			flower.draw();
 			flowers.push(flower);
 		}
-
-		// Store for debugging
-		window.currentPoster = {
-			numFlowers,
-			colorPalette,
-			flowers,
-			bgColor,
-		};
 	}
 
 	// ============================================================================
@@ -301,7 +293,7 @@ const sketch = (p: p5) => {
 		p.noLoop();
 		clearTimeout(resizeTimeout);
 		resizeTimeout = setTimeout(() => {
-			p.resizeCanvas(container.elt.offsetWidth, container.elt.offsetHeight);
+			p.resizeCanvas(container.elt.offsetWidth, container.elt.offsetWidth);
 			newPoster();
 			p.loop();
 		}, 250);
