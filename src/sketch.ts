@@ -289,7 +289,7 @@ const sketch = (p: p5) => {
 
 	p.setup = () => {
 		container = p.select("#sketch-container");
-		p.createCanvas(container.width, container.height);
+		p.createCanvas(container.width, container.width);
 		p.select("canvas").parent("sketch-container");
 
 		p.angleMode(p.DEGREES);
