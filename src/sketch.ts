@@ -25,7 +25,19 @@ const PETAL_COLORS = {
 	red: "rgb(225, 91, 100)",
 };
 
-const sketch = (p: p5) => {
+// ============================================================================
+// SKETCH CONTROLS
+// ============================================================================
+// createSketch fills this in, giving Florals a handle on the closure's
+// internals without handing the p5 instance itself to the caller.
+type SketchControls = {
+	regenerate: () => void;
+	pause: () => void;
+	resume: () => void;
+	isPaused: () => boolean;
+};
+
+const createSketch = (container: HTMLElement, controls: SketchControls, onReady: () => void) => (p: p5) => {
 	// ============================================================================
 	// STEM CONFIGURATION
 	// ============================================================================
@@ -218,7 +230,11 @@ const sketch = (p: p5) => {
 
 		getPetalColor() {
 			const palette = COLOR_PALETTES[this.colorPalette];
-			return p.lerpColor(this.petalColor, p.color(palette.canvas), this.currentTint);
+			return p.lerpColor(
+				this.petalColor,
+				p.color(palette.canvas),
+				this.currentTint,
+			);
 		}
 
 		drawStem() {
@@ -253,7 +269,7 @@ const sketch = (p: p5) => {
 		const bgColor = COLOR_PALETTES[colorPalette].canvas;
 		// Set background
 		p.background(bgColor);
-		container.style("background-color", bgColor);
+		container.style.backgroundColor = bgColor;
 
 		// Generate flowers with depth tinting
 		const flowers = [];
@@ -276,32 +292,124 @@ const sketch = (p: p5) => {
 	// ============================================================================
 	// P5.JS SETUP
 	// ============================================================================
-	let container;
-	let resizeTimeout;
+	let resizeTimeout: ReturnType<typeof setTimeout> | undefined;
+	let isSetup = false;
+	let paused = false;
 
 	p.setup = () => {
-		container = p.select("#sketch-container");
-		p.createCanvas(container.width, container.width);
-		p.select("canvas").parent("sketch-container");
+		const canvas = p.createCanvas(
+			container.clientWidth,
+			container.clientWidth,
+		);
+		canvas.parent(container);
 
 		p.angleMode(p.DEGREES);
 		p.frameRate(DISPLAY.FPS);
 		newPoster();
+
+		isSetup = true;
+		onReady();
 	};
 
 	p.windowResized = () => {
 		p.noLoop();
 		clearTimeout(resizeTimeout);
 		resizeTimeout = setTimeout(() => {
-			p.resizeCanvas(container.elt.offsetWidth, container.elt.offsetWidth);
+			p.resizeCanvas(container.clientWidth, container.clientWidth);
 			newPoster();
-			p.loop();
+			// A resize while paused refits the canvas but must not restart the loop
+			if (!paused) p.loop();
 		}, 250);
 	};
 
 	p.draw = () => {
 		newPoster();
 	};
+
+	controls.regenerate = () => {
+		// Before setup() there is no canvas to draw on, and setup() draws the
+		// first poster itself, so there is nothing to regenerate yet.
+		if (isSetup) newPoster();
+	};
+
+	controls.pause = () => {
+		paused = true;
+		// Drop any pending resize so it cannot restart the loop after pausing
+		clearTimeout(resizeTimeout);
+		p.noLoop();
+	};
+
+	controls.resume = () => {
+		paused = false;
+		p.loop();
+	};
+
+	controls.isPaused = () => paused;
 };
 
-new p5(sketch);
+// ============================================================================
+// PUBLIC API
+// ============================================================================
+export class Florals {
+	private p: p5;
+	private controls: SketchControls;
+	private container: HTMLElement;
+	private previousBackground: string;
+	private destroyed = false;
+
+	/** Resolves once the canvas exists. p5 defers setup() until window load. */
+	readonly ready: Promise<void>;
+
+	constructor(container: HTMLElement) {
+		this.container = container;
+		this.previousBackground = container.style.backgroundColor;
+
+		// createSketch populates this synchronously, inside the p5 constructor
+		const controls = {} as SketchControls;
+		let onReady: () => void;
+		this.ready = new Promise<void>((resolve) => onReady = resolve);
+
+		this.p = new p5(createSketch(container, controls, () => onReady()));
+		this.controls = controls;
+	}
+
+	get paused(): boolean {
+		return this.destroyed ? true : this.controls.isPaused();
+	}
+
+	/** Draw a fresh poster immediately, whether running or paused. */
+	regenerate(): this {
+		this.assertAlive();
+		this.controls.regenerate();
+		return this;
+	}
+
+	/** Stop drawing new posters, leaving the current one on screen. */
+	pause(): this {
+		this.assertAlive();
+		this.controls.pause();
+		return this;
+	}
+
+	resume(): this {
+		this.assertAlive();
+		this.controls.resume();
+		return this;
+	}
+
+	/** Remove the canvas and release the container. Not reusable afterwards. */
+	destroy(): void {
+		if (this.destroyed) return;
+		// pause() first: p5's remove() does not know about our resize timeout
+		this.controls.pause();
+		this.p.remove();
+		this.container.style.backgroundColor = this.previousBackground;
+		this.destroyed = true;
+	}
+
+	private assertAlive(): void {
+		if (this.destroyed) {
+			throw new Error("This Florals instance has been destroyed");
+		}
+	}
+}
