@@ -5,7 +5,7 @@
 }
 
 body {
-	padding: 1rem;
+	padding: 0 1rem;
 	font-family: "Times New Roman", Times, serif;
 	font-size: 14px;
 	display: flex;
@@ -17,12 +17,20 @@ body {
 header {
 	width: 100%;
 	display: flex;
-	justify-content:  space-between;
+	justify-content: space-between;
+	opacity: 0.2;
+	transition: opacity 0.2s ease-out;
+	padding: 1rem 0;
+}
+
+header:hover {
+	opacity: 1;
+	transition: opacity 0.3s ease-out;
 }
 
 header * {
 	font-weight: normal;
-	font-size: 1rem;
+	font-size: 0.95rem;
 }
 
 header div {
